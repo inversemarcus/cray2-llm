@@ -49,6 +49,7 @@ def main():
         err, cos = compare(x, ref)
         print('layer %2d  rel.L2 %.2e  cos %.8f' % (layer, err, cos), flush=True)
 
+    failed = False
     pos = a.pos
     for t in [int(v) for v in a.tokens.split(',')]:
         h0 = time.time()
@@ -62,10 +63,13 @@ def main():
             best = max(range(len(ref)), key=ref.__getitem__)
             print('logits    rel.L2 %.2e  cos %.8f  native argmax %d %s' % (err, cos, best,
                   'MATCH' if best == nxt else 'DIFFERENT'))
+            failed |= best != nxt
         pos += 1
     for line in m.s.stats():
         print(line)
     m.close()
+    if failed:
+        sys.exit('FAIL: selected token differs from the native reference')
 
 
 if __name__ == '__main__':

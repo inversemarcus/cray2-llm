@@ -534,11 +534,13 @@ def build(layout, act_bits=6):
     e('A6 [%d]' % LM['link1'])
     e('J A6')
 
-    # ================================================================ quantg
-    # In: A1 = 128 floats (CM), A3 = QT entry. Out: A1 += 128, A3 += 16.
-    # Reproduces the native A6g128 contract including IEEE-F32 rounding of the
-    # input, of 31/a and of x*inverse, and round-half-even to integer, using
-    # Cray-2 integer/logical vector operations on the Cray float coefficient.
+    # ================================================================ quantk
+    # Native quantize_row_q8_K over one 256-element block (iscale = -QMAX/max),
+    # reproducing IEEE-F32 rounding of x, of the scale and of x*iscale, and
+    # round-half-even to integer, with CRAY-2 integer/logical vector operations.
+    # In: A1 = 256 floats, A3 = QT entry of the first 128-group.  Out: two
+    # entries (stride QTW) of bit-plane words and K1 = d, K2 = -T*d;
+    # A1 += 256, A3 += 2*QTW.
     g.lab('quantk')
     e('[%d] A6' % LM['link2'])
     e('[%d] A3' % LM['sc'])

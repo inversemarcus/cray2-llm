@@ -22,6 +22,9 @@ from cray2lm import gen_binary, gen_ternary, layout  # noqa: E402
 from cray2lm.machine import EMU  # noqa: E402,F401  (puts the emulator package on sys.path)
 from cray2 import cal2  # noqa: E402
 from cray2lm.tokenizer import Tokenizer  # noqa: E402
+import hashlib  # noqa: E402
+import json  # noqa: E402
+import shutil  # noqa: E402
 
 MODELS = {'binary': ('binary', None), 'ternary6': ('ternary', 6), 'ternary8': ('ternary', 8)}
 
@@ -34,15 +37,30 @@ def main():
     a = ap.parse_args()
     kind, bits = MODELS[a.model]
     img = ROOT / 'images' / kind
-    if a.force or not (img / 'layout.json').exists():
+    h = hashlib.sha256()
+    with open(a.gguf, 'rb') as f:
+        for chunk in iter(lambda: f.read(1 << 24), b''):
+            h.update(chunk)
+    digest = h.hexdigest()
+    if (img / 'layout.json').exists():
+        old = json.loads((img / 'layout.json').read_text()).get('source_sha256')
+        if old != digest and not a.force:
+            sys.exit('images/%s was built from a different GGUF (sha256 %s); use --force to rebuild' % (kind, old))
+    if a.force and img.exists():
+        shutil.rmtree(img)
+    if not (img / 'layout.json').exists():
         print('[1/3] converting weights into a CRAY-2 memory image (a few minutes)')
         layout.build_image(a.gguf, img, kind, log=lambda s: None)
+        lay = json.loads((img / 'layout.json').read_text())
+        lay['source_sha256'] = digest
+        (img / 'layout.json').write_text(json.dumps(lay, indent=1))
     else:
         print('[1/3] weight image present: %s' % img)
     if not (img / 'vocab.json').exists():
         print('[2/3] reading tokenizer vocabulary')
         Tokenizer(a.gguf, cache=str(img / 'vocab.json'))
     out = ROOT / 'build' / a.model
+    print('model %s, GGUF sha256 %s' % (a.model, digest))
     print('[3/3] generating and assembling the CAL program -> %s' % out)
     if kind == 'binary':
         gen_binary.generate(img / 'layout.json', out)

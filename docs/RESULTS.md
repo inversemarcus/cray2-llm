@@ -23,7 +23,7 @@ Why not faster: the CRAY-2 has no chaining and eight vector registers, and a
 fully pipelined bit-plane step needs about nine. With the masks staged through
 Local Memory, the logical and integer units run at about 70% of their limit.
 
-## Fidelity (emulated CRAY-2 vs llama.cpp on a CPU)
+## Fidelity (emulated CRAY-2 vs llama.cpp on a CPU, individual prompts)
 
 | Check | Result |
 |---|---|
@@ -51,16 +51,24 @@ is the `ternary6` configuration.
 | PIQA (32) | 25 | 26 (81%) | 26 (81%) | 81.0% |
 | ARC-Challenge (32) | 15 | 15 (47%) | 15 (47%) | 51.4% |
 
-Vendor-published scores for Bonsai-8B (EvalScope) are MMLU-Redux 65.7, GSM8K
-88, HumanEval+ 73.8 and IFEval 79.8. The GPT-3 paper reports 0% on HumanEval
-under its setup.
+Vendor-published scores for the stock 1-bit Bonsai-8B (EvalScope, not our
+6-bit configuration, and not run on the emulator) are MMLU-Redux 65.7, GSM8K
+88, HumanEval+ 73.8 and IFEval 79.8. HumanEval itself was introduced in the
+Codex paper (Chen et al. 2021, arXiv:2107.03374), which reports GPT-3 solving
+0% of its problems.
 
 Reading these honestly:
-- **Reasoning, math, code and instruction following** are at or above GPT-3.
+- **Reasoning tests are roughly at GPT-3's level** (MMLU, PIQA, ARC) in our
+  small native pilots of the same 6-bit arithmetic. **Math and code** are far
+  above GPT-3 in the vendor's numbers for the stock model, which we have not
+  reproduced.
 - **Memorized facts are clearly below.** With 10-shot prompting the default
   model gets 48% against GPT-3's 71%, and the upper end of the 95% interval is
-  60%. The limit is how many weight bits fit in 2 GiB: knowledge capacity
-  scales with stored parameters, and GPT-3 has 175 billion.
+  60%. Our hypothesis, not a demonstrated cause, is limited weight capacity:
+  knowledge capacity scales with stored parameters, and GPT-3 has 175 billion.
+- **The 10-shot prompts were run natively only.** They are 320–358 tokens,
+  longer than the ternary configuration's 200-position context on the
+  emulated machine.
 - **Small samples.** 32–64 questions per test, which are pilots rather than
   full benchmark runs. Protocols and question samples differ from the GPT-3
   paper.

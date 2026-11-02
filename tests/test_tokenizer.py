@@ -2,9 +2,14 @@
 
     python3 tests/test_tokenizer.py MODEL.gguf REF_TOKENIZER_CMD... [--texts file.jsonl ...]
 
-REF_TOKENIZER_CMD is a program speaking the small stdin/stdout protocol of
-tools/llama_tokenizer.cpp (built against llama.cpp).  Every prompt string found
-in the given JSONL files (keys text/prompt/context/question) is checked, plus
+REF_TOKENIZER_CMD is tools/llama_tokenizer.cpp built against llama.cpp
+(PrismML-Eng/llama.cpp at a153697, which supports these tensor types), e.g.
+
+    c++ -std=c++17 -O2 -I$LLAMA/include -I$LLAMA/ggml/include tools/llama_tokenizer.cpp \\
+        $LLAMA/build/src/libllama.a $LLAMA/build/ggml/src/libggml*.a -fopenmp -o llama_tokenizer
+    python3 tests/test_tokenizer.py MODEL.gguf ./llama_tokenizer MODEL.gguf
+
+Every prompt string found in the given JSONL files (keys text/prompt/context/question) is checked, plus
 built-in edge cases and random strings.  Exits non-zero on any mismatch.
 """
 import json

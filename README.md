@@ -11,11 +11,18 @@ The Mona Lisa was painted by **Leonardo da Vinci**, an Italian Renaissance artis
 [37 forward passes on 4 CRAY-2 processors: 150.8 s of CRAY-2 time (4.06-4.09 s per token)]
 ```
 
-**Short answer:** mostly yes. Ternary-Bonsai-8B runs in the machine's 2 GiB at
-**about 4.1 s per token** of emulated CRAY-2 time. It matches or beats
-published GPT-3 (175B) scores on reasoning, math and code, but is clearly behind
-on memorized trivia (48% vs GPT-3's 71% few-shot). See
-[docs/RESULTS.md](docs/RESULTS.md).
+**Short answer:** partly. Ternary-Bonsai-8B runs in the machine's 2 GiB at
+**about 4.1 s per token** of emulated CRAY-2 time. Its capability evidence is
+mixed:
+- **Small native pilots** use the same 6-bit arithmetic (32–64 questions per
+  test). On those, it is roughly at GPT-3 (175B)'s published level on MMLU,
+  PIQA and ARC-Challenge.
+- **Vendor scores** are published for the stock model. On math and code they
+  are far above anything reported for GPT-3.
+- **Memorized trivia is clearly behind:** 48% vs GPT-3's 71% few-shot.
+
+None of this is a full benchmark run, and the emulated machine itself was only
+checked on individual prompts. See [docs/RESULTS.md](docs/RESULTS.md).
 
 ## What is here
 
@@ -52,10 +59,10 @@ python3 chat.py "Which river is the longest in Europe?"
 
 `build.py` converts the weights once (under a minute), reads the tokenizer
 vocabulary, then generates and assembles the CAL program. `chat.py` runs in
-**fast mode** by default: one host thread per CRAY-2 processor. Fast mode gives
-bit-identical results; its CRAY-2 clock reads about 0.8% low, because
-cross-processor memory-bank conflicts are only seen at 2,000-clock-period
-boundaries. `--exact` (and `run.py` by default) uses the single-threaded
+**fast mode** by default: one host thread per CRAY-2 processor. In our tests
+fast mode gave bit-identical results. Its CRAY-2 clock reads about 0.8% low,
+because cross-processor memory-bank conflicts are only seen at
+2,000-clock-period boundaries. `--exact` (and `run.py` by default) uses the single-threaded
 reference emulation behind every timing quoted here.
 
 Host speed: on an Apple M4 Pro one token takes about 2.3 s in fast mode and

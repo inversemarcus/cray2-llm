@@ -11,6 +11,7 @@ neural-network operation runs as CRAY-2 instructions in the emulator.  The
 reported seconds are emulated CRAY-2 time (4.1 ns clock periods).
 """
 import argparse
+import codecs
 import pathlib
 import sys
 import time
@@ -50,17 +51,19 @@ def main():
         print('\r[reading prompt %d/%d]' % (pos + 1, len(ids)), end='', file=err, flush=True)
     print(file=err)
     gen, pos = [], len(ids)
+    utf8 = codecs.getincrementaldecoder('utf-8')(errors='replace')   # tokens can split characters
     while True:
         gen.append(nxt)
         if tok.is_eog(nxt):
             break
-        sys.stdout.write(tok.decode_bytes([nxt]).decode('utf-8', errors='replace'))
+        sys.stdout.write(utf8.decode(tok.decode_bytes([nxt])))
         sys.stdout.flush()
         if len(gen) >= a.max_new_tokens:
             break
         nxt, _, cp = m.step(nxt, pos)
         cps.append(cp)
         pos += 1
+    sys.stdout.write(utf8.decode(b'', final=True))
     print()
     secs = [c * CLOCK_NS * 1e-9 for c in cps]
     print('[%d forward passes on 4 CRAY-2 processors: %.1f s of CRAY-2 time (%.2f-%.2f s per token)%s; host %.0f s]'
