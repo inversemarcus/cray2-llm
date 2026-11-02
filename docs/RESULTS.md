@@ -1,0 +1,69 @@
+# Results
+
+All CRAY-2 times are emulated clock periods × 4.1 ns from the exact
+(single-threaded) emulation, at context position 0 unless stated.
+
+## Speed
+
+| Model | CRAY-2 s/token | Notes |
+|---|---|---|
+| Ternary-Bonsai-8B, 6-bit activations (default) | **4.10** | includes an assumed 25 ms disk read for the embedding row |
+| Ternary-Bonsai-8B, 8-bit (native) activations | 5.03 | |
+| Bonsai-8B (1-bit), 6-bit activations | 2.25 | 2.34 s at position 127, 2.63 s at 511, 3.01 s at 1023 |
+
+Timing sensitivity, binary model at position 0:
+- **Optimistic:** vector logical/integer startup 10 CP, unit gap 0: 2.18 s.
+- **Pessimistic:** all vector startups 30 CP, unit gap 4, taken branch 8 CP: 2.39 s.
+
+Where the time goes: about 98% is the bit-plane matrix kernels, at the same
+cost per weight for every matrix including the output head. Norms,
+quantization and attention take under 2% at short context.
+
+Why not faster: the CRAY-2 has no chaining and eight vector registers, and a
+fully pipelined bit-plane step needs about nine. With the masks staged through
+Local Memory, the logical and integer units run at about 70% of their limit.
+
+## Fidelity (emulated CRAY-2 vs llama.cpp on a CPU)
+
+| Check | Result |
+|---|---|
+| Ternary 6-bit, token 198 | Hidden state bit-identical to the native 6-bit reference through layer 20; final layer 1.4% rel. L2 (cos 0.99991); same selected token |
+| Ternary 8-bit, token 198 | Layers 0–5 bit-identical; final layer 0.44% rel. L2 (cos 0.99999); same token |
+| Ternary 8-bit, generation | TriviaQA "longest river in Europe" prompt (36 tokens): generated tokens identical to native ("Volga River" + end of turn), 41 passes |
+| Binary, generation | TriviaQA prompt (36 tokens): generated tokens identical to native ("Antoine Lavoisier" + end of turn), 43 passes |
+| Activation codes | All 4,096 quantized codes and 32 scales of a full activation vector match native exactly |
+
+The remaining drift in late layers is float32 summation order: the CRAY-2
+accumulates in 48-bit floating point, native in float32. It does not change
+the tokens in the checks above.
+
+## Capability (native runs, small pilot samples)
+
+Same frozen questions, prompts and scorers for every model. The 6-bit variant
+is the `ternary6` configuration.
+
+| Test | Binary 8B | Ternary 8B (8-bit) | Ternary 8B (6-bit) | GPT-3 175B (published) |
+|---|---|---|---|---|
+| TriviaQA, raw prompt, 0-shot (64) | 7 | 14 | 13 | |
+| TriviaQA, chat, 0-shot (64) | 21 (33%) | 29 (45%) | 28 (44%) | 64.3% zero-shot |
+| TriviaQA, 10-shot (64) | 27 (42%) | 30 (47%) | **31 (48%)** | 71.2% few-shot (up to 64 examples) |
+| MMLU, strict chat format (57) | 34 | 29 (13 format errors) | 28 (14 format errors) | 43.9% (few-shot) |
+| PIQA (32) | 25 | 26 (81%) | 26 (81%) | 81.0% |
+| ARC-Challenge (32) | 15 | 15 (47%) | 15 (47%) | 51.4% |
+
+Vendor-published scores for Bonsai-8B (EvalScope) are MMLU-Redux 65.7, GSM8K
+88, HumanEval+ 73.8 and IFEval 79.8. The GPT-3 paper reports 0% on HumanEval
+under its setup.
+
+Reading these honestly:
+- **Reasoning, math, code and instruction following** are at or above GPT-3.
+- **Memorized facts are clearly below.** With 10-shot prompting the default
+  model gets 48% against GPT-3's 71%, and the upper end of the 95% interval is
+  60%. The limit is how many weight bits fit in 2 GiB: knowledge capacity
+  scales with stored parameters, and GPT-3 has 175 billion.
+- **Small samples.** 32–64 questions per test, which are pilots rather than
+  full benchmark runs. Protocols and question samples differ from the GPT-3
+  paper.
+- **MMLU formatting.** The strict MMLU gap between the ternary and binary
+  models is mostly formatting: answers like "C. True, False" where only "C"
+  is accepted.

@@ -1,0 +1,9 @@
+# built artifacts
+sim/cray2sim
+tests/test_fp
+build/
+images/
+models/
+__pycache__/
+*.pyc
+.DS_Store

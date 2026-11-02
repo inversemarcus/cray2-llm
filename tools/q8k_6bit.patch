@@ -1,0 +1,15 @@
+--- a/ggml/src/ggml-quants.c
++++ b/ggml/src/ggml-quants.c
+@@ -2958,10 +2958,10 @@
+         }
+         //const float iscale = -128.f/max;
+         // We need this change for IQ2_XXS, else the AVX implementation becomes very awkward
+-        const float iscale = -127.f/max;
++        const float iscale = -31.f/max;
+         for (int j = 0; j < QK_K; ++j) {
+             int v = nearest_int(iscale*x[j]);
+-            y[i].qs[j] = MIN(127, v);
++            y[i].qs[j] = MIN(31, v);
+         }
+         for (int j = 0; j < QK_K/16; ++j) {
+             int sum = 0;

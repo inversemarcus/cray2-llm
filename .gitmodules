@@ -1,0 +1,3 @@
+[submodule "external/cray2sim"]
+	path = external/cray2sim
+	url = ../cray2sim
