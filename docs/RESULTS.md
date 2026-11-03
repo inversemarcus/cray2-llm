@@ -8,12 +8,12 @@ All CRAY-2 times are emulated clock periods × 4.1 ns from the exact
 | Model | CRAY-2 s/token | Notes |
 |---|---|---|
 | Ternary-Bonsai-8B, 6-bit activations (default) | **4.10** | includes an assumed 25 ms disk read for the embedding row |
-| Ternary-Bonsai-8B, 8-bit (native) activations | 5.03 | |
-| Bonsai-8B (1-bit), 6-bit activations | 2.25 | 2.34 s at position 127, 2.63 s at 511, 3.01 s at 1023 |
+| Ternary-Bonsai-8B, 8-bit (native) activations | 5.01 | |
+| Bonsai-8B (1-bit), 6-bit activations | 2.22 | 2.31 s at position 127, 2.60 s at 511, 2.98 s at 1023 |
 
 Timing sensitivity, binary model at position 0:
-- **Optimistic:** vector logical/integer startup 10 CP, unit gap 0: 2.18 s.
-- **Pessimistic:** all vector startups 30 CP, unit gap 4, taken branch 8 CP: 2.39 s.
+- **Optimistic:** vector logical/integer startup 10 CP, unit gap 0: 2.09 s.
+- **Pessimistic:** all vector startups 30 CP, unit gap 4, taken branch 8 CP: 2.33 s.
 
 Where the time goes: about 98% is the bit-plane matrix kernels, at the same
 cost per weight for every matrix including the output head. Norms,

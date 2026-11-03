@@ -62,7 +62,7 @@ python3 tests/test_model.py --model ternary6        # end-to-end check (about a 
 `build.py` converts the weights once (under a minute), reads the tokenizer
 vocabulary, then generates and assembles the CAL program. `chat.py` runs in
 **fast mode** by default: one host thread per CRAY-2 processor. In our tests
-fast mode gave bit-identical results. Its CRAY-2 clock reads about 0.8% low,
+fast mode gave bit-identical results. Its CRAY-2 clock reads about 0.9% low,
 because cross-processor memory-bank conflicts are only seen at
 2,000-clock-period boundaries. `--exact` (and `run.py` by default) uses the single-threaded
 reference emulation behind every timing quoted here.
@@ -76,8 +76,8 @@ about 33 s and 80 s.
 | `--model` | Weights | Activations | Context | CRAY-2 s/token |
 |---|---|---|---|---|
 | `ternary6` (default) | Ternary-Bonsai-8B, {-1,0,+1} | 6-bit, blocks of 256 | 200 | **4.10** |
-| `ternary8` | Ternary-Bonsai-8B | 8-bit (native Q8_K) | 200 | 5.03 |
-| `binary` | Bonsai-8B (1-bit), [prism-ml/Bonsai-8B-gguf](https://huggingface.co/prism-ml/Bonsai-8B-gguf) | 6-bit, groups of 128 | 1024 | 2.25 |
+| `ternary8` | Ternary-Bonsai-8B | 8-bit (native Q8_K) | 200 | 5.01 |
+| `binary` | Bonsai-8B (1-bit), [prism-ml/Bonsai-8B-gguf](https://huggingface.co/prism-ml/Bonsai-8B-gguf) | 6-bit, groups of 128 | 1024 | 2.22 |
 
 Context is limited by memory. The ternary weights take 241 of the 256 Mwords
 (2 GiB), and the attention cache gets the rest. The ternary embedding table
@@ -95,7 +95,7 @@ as CRAY-2 disk I/O.
   clock, 2-clock issue, no chaining, 57-clock bank busy, phased quadrant
   access, 22-clock floating-point vector startup. Some values are explicit
   assumptions: logical/integer vector startup, unit turnaround, branch cost,
-  and the 25 ms disk read. Sensitivity runs move per-token time by about ±5%.
+  and the 25 ms disk read. Sensitivity runs move per-token time by about −6% to +5%.
   See the emulator's
   [docs/TIMING.md](external/cray2sim/docs/TIMING.md) and this repository's
   [docs/MEASUREMENT.md](docs/MEASUREMENT.md).
