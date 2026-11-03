@@ -36,7 +36,7 @@ class Machine:
 
     build_dir: output of build.py (program.bin, rope.img, desc.img, meta.json)
     image_dir: weight image (weights.img, layout.json, embd.disk for ternary)
-    fast:      multithreaded emulation (bit-identical results; Cray clock ~0.9% low)
+    fast:      multithreaded emulation (bit-identical results; Cray clock about 1-6% low)
     """
 
     def __init__(self, build_dir, image_dir, fast=False, qwin=2000, timing=(), debug=False, log=print):

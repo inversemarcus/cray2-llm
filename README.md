@@ -12,7 +12,7 @@ The Mona Lisa was painted by **Leonardo da Vinci**, an Italian Renaissance artis
 ```
 
 (`chat.py` uses the fast multithreaded emulation, whose clock reads about 1%
-low. Quoted timings below are from the exact emulation.)
+low for this model. Quoted timings below are from the exact emulation.)
 
 **Short answer:** partly. Ternary-Bonsai-8B runs in the machine's 2 GiB at
 **about 4.1 s per token** of emulated CRAY-2 time. Its capability evidence is
@@ -67,7 +67,8 @@ python3 tests/test_model.py --model ternary6        # end-to-end check (about a 
 `build.py` converts the weights once (under a minute), reads the tokenizer
 vocabulary, then generates and assembles the CAL program. `chat.py` runs in
 **fast mode** by default: one host thread per CRAY-2 processor. In our tests
-fast mode gave bit-identical results. Its CRAY-2 clock reads about 0.9% low,
+fast mode gave bit-identical results. Its CRAY-2 clock reads low, by about 1% for the
+ternary models and 6% for the 1-bit model,
 because cross-processor memory-bank conflicts are only seen at
 2,000-clock-period boundaries. `--exact` (and `run.py` by default) uses the single-threaded
 reference emulation behind every timing quoted here.
