@@ -13,8 +13,8 @@ or refers to the following material from other projects.
 Not included and not redistributed:
 
 - **Model weights.** Bonsai-8B and Ternary-Bonsai-8B are published by
-  PrismML. `build.py` reads a GGUF file that you download yourself. Their
-  license terms apply to the weights and to the images built from them.
+  PrismML under Apache-2.0. `build.py` reads a GGUF file that you download
+  yourself. Their license terms apply to the weights and to the images built from them.
 - **llama.cpp.** The reference tools are built against PrismML-Eng/llama.cpp
   at commit a153697, which supports the Q1_0 and PQ2_0 tensor types.
 - **Evaluation data.** TriviaQA, MMLU, PIQA and ARC-Challenge questions used

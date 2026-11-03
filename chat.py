@@ -18,7 +18,7 @@ import time
 
 ROOT = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
-from cray2lm.machine import CLOCK_NS, Machine  # noqa: E402
+from cray2lm.machine import CLOCK_NS, Machine, default_dirs  # noqa: E402
 from cray2lm.tokenizer import Tokenizer  # noqa: E402
 
 TEMPLATE = '<|im_start|>user\n%s<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n'
@@ -33,8 +33,7 @@ def main():
     ap.add_argument('--exact', action='store_true',
                     help='single-threaded emulation with exact cross-processor bank timing (slower)')
     a = ap.parse_args()
-    build = ROOT / 'build' / a.model
-    image = ROOT / 'images' / ('binary' if a.model == 'binary' else 'ternary')
+    build, image = default_dirs(a.model)
     if not (build / 'program.bin').exists():
         sys.exit('model not built: python3 build.py %s --gguf ...' % a.model)
     tok = Tokenizer(cache=str(image / 'vocab.json'))

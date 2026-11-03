@@ -35,6 +35,7 @@ checked on individual prompts. See [docs/RESULTS.md](docs/RESULTS.md).
 | `cray2lm/tokenizer.py`, `cray2lm/gguf.py` | Pure-Python GGUF reader and Qwen tokenizer, checked identical to llama.cpp on 731 strings. |
 | `cray2lm/machine.py` | The host side, playing the role of the CRAY-2 Foreground Processor: loads memory, feeds tokens, reads results. |
 | `chat.py`, `run.py`, `build.py` | Ask questions; timing probes and verification; build steps. |
+| `tests/test_model.py` | End-to-end check of a built model: selected token, exact clock count, context limit |
 | `tests/test_tokenizer.py` | Tokenizer comparison against llama.cpp |
 | `tools/native_capture.cpp`, `tools/q8k_6bit.patch` | For reproducing the fidelity checks against llama.cpp. |
 
@@ -55,6 +56,7 @@ mkdir -p models && mv ~/Downloads/Ternary-Bonsai-8B-PQ2_0.gguf models/
 
 python3 build.py ternary6 --gguf models/Ternary-Bonsai-8B-PQ2_0.gguf
 python3 chat.py "Which river is the longest in Europe?"
+python3 tests/test_model.py --model ternary6        # end-to-end check (about a minute)
 ```
 
 `build.py` converts the weights once (under a minute), reads the tokenizer

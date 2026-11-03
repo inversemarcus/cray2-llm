@@ -111,4 +111,4 @@ class Machine:
 
 def default_dirs(model):
     """Conventional locations used by build.py."""
-    return ROOT / 'build' / model, ROOT / 'images' / model.split('-')[0]
+    return ROOT / 'build' / model, ROOT / 'images' / ('binary' if model == 'binary' else 'ternary')

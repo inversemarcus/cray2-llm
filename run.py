@@ -20,7 +20,7 @@ import time
 
 ROOT = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
-from cray2lm.machine import CLOCK_NS, Machine  # noqa: E402
+from cray2lm.machine import CLOCK_NS, Machine, default_dirs  # noqa: E402
 
 
 def compare(x, ref):
@@ -39,8 +39,7 @@ def main():
     ap.add_argument('--fast', action='store_true', help='multithreaded emulation')
     ap.add_argument('--timing', default='', help='comma list of emulator timing overrides name=value')
     a = ap.parse_args()
-    build = ROOT / 'build' / a.model
-    image = ROOT / 'images' / ('binary' if a.model == 'binary' else 'ternary')
+    build, image = default_dirs(a.model)
     m = Machine(build, image, fast=a.fast, timing=[x for x in a.timing.split(',') if x], debug=bool(a.ref))
 
     def on_layer(layer, t):
