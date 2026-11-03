@@ -67,9 +67,9 @@ because cross-processor memory-bank conflicts are only seen at
 2,000-clock-period boundaries. `--exact` (and `run.py` by default) uses the single-threaded
 reference emulation behind every timing quoted here.
 
-Host speed: on an Apple M4 Pro one token takes about 2.3 s in fast mode and
-8 s in exact mode, faster than the 1985 machine's 4.1 s. A 2013 Xeon takes
-about 33 s and 80 s.
+Host speed for the default model: on an Apple M4 Pro one token takes about
+2.4 s in fast mode and 10 s in exact mode, against the 1985 machine's 4.1 s. A
+2013 Xeon (E5-1650 v2) takes about 20 s and 90 s.
 
 ### Models
 
