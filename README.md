@@ -123,4 +123,5 @@ as CRAY-2 disk I/O.
 
 MIT, see [LICENSE](LICENSE). The model weights are not included: download them
 from PrismML under their licenses. The CRAY-2 manuals are Cray Research
-documents; cray2sim cites them and does not redistribute them.
+documents; cray2sim cites them and does not redistribute them. Third-party
+material is listed in [THIRD_PARTY.md](THIRD_PARTY.md).
