@@ -45,6 +45,34 @@ class Gen:
         self.e('A6 %s' % target)
         self.e('J A6')
 
+    def argmax_lanes(self, prefix):
+        """Reduce 64 per-lane maxima (logits at LM 'am', token numbers at LM
+        'ai') to S5 = the largest logit and S6 = its token.  On a tie the lower
+        token number wins, as in the reference (first maximum).  Expects
+        A2 = 1; uses A3, A4, A7 and S1-S6."""
+        e = self.e
+        e('A3 %d' % self.lm['am'])
+        e('A4 %d' % self.lm['ai'])
+        e('S5 [A3]')
+        e('S6 [A4]')
+        e('A7 63')
+        self.lab(prefix)
+        e('A3 A3+A2')
+        e('A4 A4+A2')
+        e('S1 [A3]')
+        e('S2 S5-FS1')
+        e('JM S2,%s_t' % prefix)         # new lane larger
+        e('JN S2,%s_n' % prefix)         # new lane smaller
+        e('S3 [A4]')
+        e('S4 S3-S6')
+        e('JP S4,%s_n' % prefix)         # equal logits, not a lower token
+        self.lab(prefix + '_t')
+        e('S5 S1')
+        e('S6 [A4]')
+        self.lab(prefix + '_n')
+        e('A7 A7-A2')
+        e('JN A7,%s' % prefix)
+
     def lm_store_a(self, slot, a):
         self.e('[%d] %s' % (self.lm[slot], a))
 

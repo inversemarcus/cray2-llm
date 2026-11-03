@@ -32,6 +32,6 @@ HR-2000 §5.3 documents the disk system (36 units, synchronous groups at
 binary model at position 0:
 - **Optimistic:** vector logical/integer startup 10 CP, unit gap 0: 2.09 s.
 - **Pessimistic:** all vector startups 30 CP, unit gap 4, taken branch 8 CP:
-  2.33 s.
+  2.32 s.
 
-The nominal figure is 2.22 s.
+The nominal figure is 2.21 s.

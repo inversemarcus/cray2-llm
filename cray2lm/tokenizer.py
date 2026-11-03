@@ -15,7 +15,7 @@ from .gguf import GGUF
 
 
 def _bytes_to_unicode():
-    # byte-to-character table from OpenAI's GPT-2 encoder.py (MIT); see THIRD_PARTY.md
+    # byte-to-character table from OpenAI's GPT-2 encoder.py (Modified MIT); see THIRD_PARTY.md
     bs = list(range(ord('!'), ord('~') + 1)) + list(range(ord('¡'), ord('¬') + 1)) + list(range(ord('®'), ord('ÿ') + 1))
     cs = bs[:]
     n = 0

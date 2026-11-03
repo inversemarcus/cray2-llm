@@ -9,11 +9,11 @@ All CRAY-2 times are emulated clock periods × 4.1 ns from the exact
 |---|---|---|
 | Ternary-Bonsai-8B, 6-bit activations (default) | **4.10** | includes an assumed 25 ms disk read for the embedding row |
 | Ternary-Bonsai-8B, 8-bit (native) activations | 5.01 | |
-| Bonsai-8B (1-bit), 6-bit activations | 2.22 | 2.31 s at position 127, 2.60 s at 511, 2.98 s at 1023 |
+| Bonsai-8B (1-bit), 6-bit activations | 2.21 | 2.30 s at position 127, 2.59 s at 511, 2.98 s at 1023 |
 
 Timing sensitivity, binary model at position 0:
 - **Optimistic:** vector logical/integer startup 10 CP, unit gap 0: 2.09 s.
-- **Pessimistic:** all vector startups 30 CP, unit gap 4, taken branch 8 CP: 2.33 s.
+- **Pessimistic:** all vector startups 30 CP, unit gap 4, taken branch 8 CP: 2.32 s.
 
 Where the time goes: about 98% is the bit-plane matrix kernels, at the same
 cost per weight for every matrix including the output head. Norms,
@@ -25,6 +25,11 @@ Local Memory, the logical and integer units run at about 70% of their limit.
 
 ## Fidelity (emulated CRAY-2 vs llama.cpp on a CPU, individual prompts)
 
+These were measured during development. The native captures and comparison
+outputs are not in the repository; `run.py --ref` with a capture from
+`tools/native_capture.cpp` repeats the per-layer comparison, and
+`tests/test_model.py` checks the selected token for each model.
+
 | Check | Result |
 |---|---|
 | Ternary 6-bit, token 198 | Hidden state bit-identical to the native 6-bit reference through layer 20; final layer 1.4% rel. L2 (cos 0.99991); same selected token |
@@ -33,14 +38,17 @@ Local Memory, the logical and integer units run at about 70% of their limit.
 | Binary, generation | TriviaQA prompt (36 tokens): generated tokens identical to native ("Antoine Lavoisier" + end of turn), 43 passes |
 | Activation codes | All 4,096 quantized codes and 32 scales of a full activation vector match native exactly |
 
-The remaining drift in late layers is float32 summation order: the CRAY-2
-accumulates in 48-bit floating point, native in float32. It does not change
+We attribute the remaining drift in late layers to arithmetic differences,
+not demonstrated in detail: the CRAY-2 accumulates in 48-bit floating point
+in its own order, native in float32. It does not change
 the tokens in the checks above.
 
 ## Capability (native runs, small pilot samples)
 
 Same frozen questions, prompts and scorers for every model. The 6-bit variant
-is the `ternary6` configuration.
+is the `ternary6` configuration. These are historical measurements: the pilot
+harness, question lists and outputs are not included in this repository, so
+the table cannot be reproduced from it alone.
 
 | Test | Binary 8B | Ternary 8B (8-bit) | Ternary 8B (6-bit) | GPT-3 175B (published) |
 |---|---|---|---|---|

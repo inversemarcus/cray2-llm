@@ -11,6 +11,9 @@ The Mona Lisa was painted by **Leonardo da Vinci**, an Italian Renaissance artis
 [37 forward passes on 4 CRAY-2 processors: 150.8 s of CRAY-2 time (4.06-4.09 s per token)]
 ```
 
+(`chat.py` uses the fast multithreaded emulation, whose clock reads about 1%
+low. Quoted timings below are from the exact emulation.)
+
 **Short answer:** partly. Ternary-Bonsai-8B runs in the machine's 2 GiB at
 **about 4.1 s per token** of emulated CRAY-2 time. Its capability evidence is
 mixed:
@@ -32,9 +35,10 @@ checked on individual prompts. See [docs/RESULTS.md](docs/RESULTS.md).
 | `cray2lm/gen_*.py` | Generators that write the whole model as CAL: binary/ternary bit-plane matrix kernels, RMSNorm, activation quantization, RoPE, attention, SwiGLU, output head and argmax, split across four processors with semaphore barriers. |
 | `cray2lm/sched.py` | Instruction scheduler for the matrix kernel. It only reorders instructions and renames registers; it never changes the arithmetic. |
 | `cray2lm/layout.py`, `tools/convert_*.c` | Convert a GGUF model into a CRAY-2 memory image (and a disk image for the embedding table). |
-| `cray2lm/tokenizer.py`, `cray2lm/gguf.py` | Pure-Python GGUF reader and Qwen tokenizer, checked identical to llama.cpp on 731 strings. |
+| `cray2lm/tokenizer.py`, `cray2lm/gguf.py` | Pure-Python GGUF reader and Qwen tokenizer, checked identical to llama.cpp on 731 strings: the 417 built into `tests/test_tokenizer.py` plus our evaluation prompts. |
 | `cray2lm/machine.py` | The host side, playing the role of the CRAY-2 Foreground Processor: loads memory, feeds tokens, reads results. |
 | `chat.py`, `run.py`, `build.py` | Ask questions; timing probes and verification; build steps. |
+| `tests/test_argmax.py` | The generated token-selection code, run with tied logits |
 | `tests/test_model.py` | End-to-end check of a built model: selected token, exact clock count, context limit |
 | `tests/test_tokenizer.py` | Tokenizer comparison against llama.cpp |
 | `tools/native_capture.cpp`, `tools/q8k_6bit.patch` | For reproducing the fidelity checks against llama.cpp. |
@@ -48,6 +52,7 @@ You need a C compiler, Python 3.9+, about 2.5 GB of RAM and about 5 GB of disk.
 
 ```sh
 git clone --recurse-submodules <this repository>   # or: git submodule update --init
+cd cray2-llm
 make && make test                                   # build and self-test the emulator
 
 # Download the model from PrismML (Apache-2.0):
@@ -77,11 +82,11 @@ Host speed for the default model: on an Apple M4 Pro one token takes about
 |---|---|---|---|---|
 | `ternary6` (default) | Ternary-Bonsai-8B, {-1,0,+1} | 6-bit, blocks of 256 | 200 | **4.10** |
 | `ternary8` | Ternary-Bonsai-8B | 8-bit (native Q8_K) | 200 | 5.01 |
-| `binary` | Bonsai-8B (1-bit), [prism-ml/Bonsai-8B-gguf](https://huggingface.co/prism-ml/Bonsai-8B-gguf) | 6-bit, groups of 128 | 1024 | 2.22 |
+| `binary` | Bonsai-8B (1-bit), [prism-ml/Bonsai-8B-gguf](https://huggingface.co/prism-ml/Bonsai-8B-gguf) | 6-bit, groups of 128 | 1024 | 2.21 |
 
 Context is limited by memory. The ternary weights take 241 of the 256 Mwords
 (2 GiB), and the attention cache gets the rest. The ternary embedding table
-(186 MB) lives on disk, and the Foreground Processor reads one row per token,
+(194 MB) lives on disk, and the Foreground Processor reads one row per token,
 as CRAY-2 disk I/O.
 
 ## How faithful is it?
@@ -95,7 +100,7 @@ as CRAY-2 disk I/O.
   clock, 2-clock issue, no chaining, 57-clock bank busy, phased quadrant
   access, 22-clock floating-point vector startup. Some values are explicit
   assumptions: logical/integer vector startup, unit turnaround, branch cost,
-  and the 25 ms disk read. Sensitivity runs move per-token time by about −6% to +5%.
+  and the 25 ms disk read. Sensitivity runs move per-token time by about ±5%.
   See the emulator's
   [docs/TIMING.md](external/cray2sim/docs/TIMING.md) and this repository's
   [docs/MEASUREMENT.md](docs/MEASUREMENT.md).

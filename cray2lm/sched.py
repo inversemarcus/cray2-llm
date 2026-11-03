@@ -84,8 +84,8 @@ def schedule(ops, vregs, sregs, pinned_in=None, pinned_out=None, T=Timing, windo
         e = t
         for s in op.srcs:
             e = max(e, ready.get(s, 0))
-        for d in op.after:
-            pass
+            if s in loc and loc[s][0] == 'V':
+                e = max(e, phys_rd.get(loc[s], 0))   # a source register is reserved while read
         k = op.kind
         if k in ('L', 'I', 'F', 'M'):
             e = max(e, unit_free[k])
