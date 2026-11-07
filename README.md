@@ -31,7 +31,7 @@ checked on individual prompts. See [docs/RESULTS.md](docs/RESULTS.md).
 
 | Path | Contents |
 |---|---|
-| `external/cray2sim/` | Git submodule: **[cray2sim](../cray2sim)**, the CRAY-2 emulator (four processors, every 1985 instruction, CRAY-2 floating point, clock-period timing model), the CAL Version 2 assembler and the cited instruction-set data |
+| `external/cray2sim/` | Git submodule: **[cray2sim](https://github.com/inversemarcus/cray2sim)**, the CRAY-2 emulator (four processors, every 1985 instruction, CRAY-2 floating point, clock-period timing model), the CAL Version 2 assembler and the cited instruction-set data |
 | `cray2lm/gen_*.py` | Generators that write the whole model as CAL: binary/ternary bit-plane matrix kernels, RMSNorm, activation quantization, RoPE, attention, SwiGLU, output head and argmax, split across four processors with semaphore barriers. |
 | `cray2lm/sched.py` | Instruction scheduler for the matrix kernel. It only reorders instructions and renames registers; it never changes the arithmetic. |
 | `cray2lm/layout.py`, `tools/convert_*.c` | Convert a GGUF model into a CRAY-2 memory image (and a disk image for the embedding table). |
@@ -51,7 +51,7 @@ install.
 You need a C compiler, Python 3.9+, about 2.5 GB of RAM and about 5 GB of disk.
 
 ```sh
-git clone --recurse-submodules <this repository>   # or: git submodule update --init
+git clone --recurse-submodules https://github.com/inversemarcus/cray2-llm.git
 cd cray2-llm
 make && make test                                   # build and self-test the emulator
 
