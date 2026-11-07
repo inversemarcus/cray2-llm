@@ -77,6 +77,15 @@ Reading these honestly:
   model gets 48% against GPT-3's 71%, and the upper end of the 95% interval is
   60%. Our hypothesis, not a demonstrated cause, is limited weight capacity:
   knowledge capacity scales with stored parameters, and GPT-3 has 175 billion.
+- **TriviaQA scoring is the official exact match**, the same rule the GPT-3
+  paper used, and it is fair to us: we checked every wrong answer by hand.
+  Exact matching rejected only a few correct answers worded differently from
+  the answer list ("1 and 1" for "One", "Third" or "1st" as an example of an
+  ordinal number, "Cassini Division" for "Cassini's Division"). Counting
+  those, the default model scores 30/64 (47%) zero-shot chat and 34/64 (53%)
+  10-shot, still well below GPT-3. The raw-prompt zero-shot row is low
+  because the model keeps writing after the answer, which exact matching
+  rejects; it is not compared with GPT-3.
 - **The 10-shot prompts were run natively only.** They are 320–358 tokens,
   longer than the ternary configuration's 200-position context on the
   emulated machine.
