@@ -55,7 +55,8 @@ the table cannot be reproduced from it alone.
 | TriviaQA, raw prompt, 0-shot (64) | 7 | 14 | 13 | |
 | TriviaQA, chat, 0-shot (64) | 21 (33%) | 29 (45%) | 28 (44%) | 64.3% zero-shot |
 | TriviaQA, 10-shot (64) | 27 (42%) | 30 (47%) | **31 (48%)** | 71.2% few-shot (up to 64 examples) |
-| MMLU, strict chat format (57) | 34 | 29 (13 format errors) | 28 (14 format errors) | 43.9% (few-shot) |
+| MMLU (57), letter scoring | 39 (68%) | 37 (65%) | **37 (65%)** | 43.9% (few-shot) |
+| MMLU (57), strict: reply must be the letter alone | 34 | 29 | 28 | |
 | PIQA (32) | 25 | 26 (81%) | 26 (81%) | 81.0% |
 | ARC-Challenge (32) | 15 | 15 (47%) | 15 (47%) | 51.4% |
 
@@ -66,8 +67,10 @@ Codex paper (Chen et al. 2021, arXiv:2107.03374), which reports GPT-3 solving
 0% of its problems.
 
 Reading these honestly:
-- **Reasoning tests are roughly at GPT-3's level** (MMLU, PIQA, ARC) in our
-  small native pilots of the same 6-bit arithmetic. **Math and code** are far
+- **MMLU is above GPT-3 and PIQA/ARC are at its level** in our small native
+  pilots of the same 6-bit arithmetic. The default model's 65% on MMLU has a
+  95% interval of 52–76%, above GPT-3's 43.9%, and is in line with the
+  vendor's MMLU-Redux 65.7 for the stock model. **Math and code** are far
   above GPT-3 in the vendor's numbers for the stock model, which we have not
   reproduced.
 - **Memorized facts are clearly below.** With 10-shot prompting the default
@@ -80,6 +83,10 @@ Reading these honestly:
 - **Small samples.** 32–64 questions per test, which are pilots rather than
   full benchmark runs. Protocols and question samples differ from the GPT-3
   paper.
-- **MMLU formatting.** The strict MMLU gap between the ternary and binary
-  models is mostly formatting: answers like "C. True, False" where only "C"
-  is accepted.
+- **MMLU scoring.** The GPT-3 paper scored multiple choice by comparing the
+  model's likelihood of each answer, so formatting cannot cost points. Our
+  matching "letter scoring" takes whichever of A–D the model ranks highest
+  as its first output token. Reading the letter at the start of the reply,
+  such as "C. True, False", gives nearly the same counts (39, 36, 36). The strict row accepts
+  only a reply that is the letter alone, which rejected even "D."; we show
+  it for completeness.

@@ -18,8 +18,8 @@ low for this model. Quoted timings below are from the exact emulation.)
 **about 4.1 s per token** of emulated CRAY-2 time. Its capability evidence is
 mixed:
 - **Small native pilots** use the same 6-bit arithmetic (32–64 questions per
-  test). On those, it is roughly at GPT-3 (175B)'s published level on MMLU,
-  PIQA and ARC-Challenge.
+  test). On those, it is above GPT-3 (175B)'s published MMLU score (65% vs
+  44%) and at its level on PIQA and ARC-Challenge.
 - **Vendor scores** are published for the stock model. On math and code they
   are far above anything reported for GPT-3.
 - **Memorized trivia is clearly behind:** 48% vs GPT-3's 71% few-shot.
