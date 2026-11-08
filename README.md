@@ -54,6 +54,7 @@ You need a C compiler, Python 3.9+, about 2.5 GB of RAM and about 5 GB of disk.
 ```sh
 git clone --recurse-submodules https://github.com/inversemarcus/cray2-llm.git
 cd cray2-llm
+git submodule update --init                         # only if you cloned without --recurse-submodules
 make && make test                                   # build and self-test the emulator
 
 # Download the model from PrismML (Apache-2.0):
