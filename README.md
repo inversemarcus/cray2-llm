@@ -38,6 +38,7 @@ checked on individual prompts. See [docs/RESULTS.md](docs/RESULTS.md).
 | `cray2lm/tokenizer.py`, `cray2lm/gguf.py` | Pure-Python GGUF reader and Qwen tokenizer, checked identical to llama.cpp on 731 strings: the 417 built into `tests/test_tokenizer.py` plus our evaluation prompts. |
 | `cray2lm/machine.py` | The host side, playing the role of the CRAY-2 Foreground Processor: loads memory, feeds tokens, reads results. |
 | `chat.py`, `run.py`, `build.py` | Ask questions; timing probes and verification; build steps. |
+| `eval/` | Reproducible quality pilot: fixed TriviaQA and MMLU samples, native harness, result summaries |
 | `tests/test_argmax.py` | The generated token-selection code, run with tied logits |
 | `tests/test_model.py` | End-to-end check of a built model: selected token, exact clock count, context limit |
 | `tests/test_tokenizer.py` | Tokenizer comparison against llama.cpp |

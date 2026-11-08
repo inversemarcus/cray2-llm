@@ -1,0 +1,23 @@
+{
+ "mmlu_rank": [
+  208,
+  285
+ ],
+ "mmlu_start": [
+  206,
+  285
+ ],
+ "trivia_chat": [
+  63,
+  200
+ ],
+ "trivia_10shot": [
+  83,
+  200
+ ],
+ "model": "Ternary-Bonsai-8B-PQ2_0.gguf",
+ "mmlu_answer": [
+  200,
+  285
+ ]
+}

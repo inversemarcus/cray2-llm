@@ -1,0 +1,23 @@
+{
+ "mmlu_rank": [
+  73,
+  285
+ ],
+ "mmlu_start": [
+  19,
+  285
+ ],
+ "trivia_chat": [
+  36,
+  200
+ ],
+ "trivia_10shot": [
+  57,
+  200
+ ],
+ "model": "Meta-Llama-3.1-8B-Instruct.i1-IQ2_XXS.gguf",
+ "mmlu_answer": [
+  139,
+  285
+ ]
+}

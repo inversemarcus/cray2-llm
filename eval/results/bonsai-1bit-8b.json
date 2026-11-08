@@ -1,0 +1,23 @@
+{
+ "mmlu_rank": [
+  182,
+  285
+ ],
+ "mmlu_start": [
+  182,
+  285
+ ],
+ "mmlu_answer": [
+  182,
+  285
+ ],
+ "trivia_chat": [
+  49,
+  200
+ ],
+ "trivia_10shot": [
+  62,
+  200
+ ],
+ "model": "Bonsai-8B-Q1_0.gguf"
+}

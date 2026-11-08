@@ -20,8 +20,11 @@ Not included and not redistributed:
 - **llama.cpp.** The reference tools are built against PrismML-Eng/llama.cpp
   at commit a15369706017f177cae8aa40b6b8592259a48806, which supports the Q1_0
   and PQ2_0 tensor types.
-- **Evaluation data.** TriviaQA, MMLU, PIQA and ARC-Challenge questions used
-  for the pilot results in `docs/RESULTS.md` are not included.
+- **Evaluation data.** No question text is included. `eval/build_sets.py`
+  downloads TriviaQA (mandarjoshi/trivia_qa; its dataset card lists the
+  license as unknown) and MMLU (cais/mmlu, MIT) at pinned revisions;
+  `eval/sets/ids.json` stores only question IDs. The PIQA and ARC-Challenge
+  pilots in `docs/RESULTS.md` used questions that are likewise not included.
 
 ## openai/gpt-2 (LICENSE at 9b63575)
 

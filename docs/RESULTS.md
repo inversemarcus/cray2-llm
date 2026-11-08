@@ -43,6 +43,35 @@ not demonstrated in detail: the CRAY-2 accumulates in 48-bit floating point
 in its own order, native in float32. It does not change
 the tokens in the checks above.
 
+## Reproducible pilot: what fits in 2 GiB
+
+Native runs on a fixed, larger sample that anyone can rebuild with `eval/`
+(200 TriviaQA questions, 285 MMLU questions; see `eval/README.md`). MMLU here
+uses the standard zero-shot format ending in "Answer:", scored by the most
+probable of A–D. Trivia is official exact match. "Mwords" is the weight
+footprint in CRAY-2 Common Memory with the embedding table on disk; the
+machine has 256.
+
+| Model | Mwords | MMLU | TriviaQA chat | TriviaQA 10-shot |
+|---|---|---|---|---|
+| Ternary-Bonsai-8B (this project) | 240 | **70%** | **32%** | **42%** |
+| Bonsai-8B, 1-bit | 127 | 64% | 25% | 31% |
+| Llama 3.1 8B Instruct, IQ1_M (2.1 bits/weight) | 236 | 32% | 4% | 13% |
+| Llama 3.1 8B Instruct, IQ2_XXS (2.4) | 265 | 49% | 18% | 29% |
+| Llama 3.1 8B Instruct, IQ2_M (2.9) | 324 | 64% | 43% | 46% |
+| Llama 3.1 8B Instruct, Q4_K_M (4.9), reference | 550 | 69% | 60% | 66% |
+
+A model with much more factual knowledge exists at this parameter count
+(Llama 3.1 8B: 66% on this trivia sample at 4 bits), but compressing it after
+training to a size that fits destroys most of that knowledge. Ternary-Bonsai,
+trained for low precision from the start, is the best of these that fits.
+Retraining a knowledge-rich model to ternary, as PrismML did with Qwen3,
+would be the way to close the gap.
+
+This sample is somewhat harder than the earlier pilot below (Bonsai 42% vs 48%
+on 10-shot trivia); with 200 questions each trivia figure is good to about
+±7 points.
+
 ## Capability (native runs, small pilot samples)
 
 Same frozen questions, prompts and scorers for every model. The 6-bit variant
