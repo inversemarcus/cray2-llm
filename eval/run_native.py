@@ -132,10 +132,11 @@ def main():
     ap.add_argument('--limit', type=int, default=0)
     ap.add_argument('--extra', default='', help='extra llama-server arguments')
     ap.add_argument('--only', default='', help='run only this part: mmlu_answer')
+    ap.add_argument('--trivia-set', default='trivia', help='trivia | trivia_dev | trivia_final')
     a = ap.parse_args()
     out = pathlib.Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
-    trivia = [json.loads(l) for l in open(SETS / 'trivia.jsonl')]
+    trivia = [json.loads(l) for l in open(SETS / (a.trivia_set + '.jsonl'))]
     shots = json.loads((SETS / 'trivia_shots.json').read_text())
     mmlu = [json.loads(l) for l in open(SETS / 'mmlu.jsonl')]
     if a.limit:

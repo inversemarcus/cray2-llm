@@ -11,6 +11,9 @@ checked on every rebuild.  Question text is not stored in this repository.
   * TriviaQA (mandarjoshi/trivia_qa) unfiltered.nocontext validation: 200
     questions, plus 10 training questions as the fixed few-shot examples.
   * MMLU (cais/mmlu) test: 5 questions from each of the 57 subjects (285).
+  * TriviaQA development and final sets: 1,000 more validation questions
+    each, disjoint from the 200 and from each other.  Tune on dev; run final
+    once per finished system.
 """
 import json
 import pathlib
@@ -79,7 +82,26 @@ def main():
                 r = mmlu[by_subject[s][k]]
                 o.write(json.dumps(dict(id='%s:%d' % (s, k), subject=s, question=r['question'], choices=r['choices'],
                                         answer='ABCD'[r['answer']]), ensure_ascii=False) + '\n')
-    print('trivia 200 (+10 shots), mmlu %d -> %s' % (sum(len(v) for v in m_idx.values()), OUT))
+    # development and final sets: 1,000 questions each, disjoint from the
+    # 200-question sample above and from each other (recorded separately)
+    rnd2 = random.Random(SEED + 1)
+    pool = sorted(set(range(len(val))) - set(q_idx))
+    picked = rnd2.sample(pool, 2000)
+    split = dict(dev=sorted(picked[:1000]), final=sorted(picked[1000:]))
+    ids2 = {k: [val[i]['question_id'] for i in v] for k, v in split.items()}
+    f2 = SETS / 'dev_final.ids.json'
+    if f2.exists():
+        assert json.loads(f2.read_text()) == ids2, 'selection differs from eval/sets/dev_final.ids.json'
+    else:
+        f2.write_text(json.dumps(ids2, indent=1))
+    for k, v in split.items():
+        with open(OUT / ('trivia_%s.jsonl' % k), 'w') as o:
+            for i in v:
+                r = val[i]
+                o.write(json.dumps(dict(id=r['question_id'], question=r['question'], answer=r['answer']['value'],
+                                        normalized_aliases=r['answer']['normalized_aliases']),
+                                   ensure_ascii=False) + '\n')
+    print('trivia 200 (+10 shots), dev 1000, final 1000, mmlu %d -> %s' % (sum(len(v) for v in m_idx.values()), OUT))
 
 
 if __name__ == '__main__':
