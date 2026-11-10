@@ -27,7 +27,7 @@ TEMPLATE = '<|im_start|>user\n%s<|im_end|>\n<|im_start|>assistant\n<think>\n\n</
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('prompt')
-    ap.add_argument('--model', default='ternary6', choices=['ternary6', 'ternary8', 'binary'])
+    ap.add_argument('--model', default='ternary6', choices=['ternary6', 'ternary6-long', 'ternary8', 'binary'])
     ap.add_argument('--raw', action='store_true', help='do not apply the chat template')
     ap.add_argument('--max-new-tokens', type=int, default=48)
     ap.add_argument('--exact', action='store_true',

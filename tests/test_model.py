@@ -30,7 +30,7 @@ def check(name, cond, detail=''):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--model', default='ternary6', choices=['ternary6', 'ternary8', 'binary'])
+    ap.add_argument('--model', default='ternary6', choices=['ternary6', 'ternary6-long', 'ternary8', 'binary'])
     a = ap.parse_args()
     want = json.loads((ROOT / 'tests' / 'expected.json').read_text())[a.model]
     build, image = default_dirs(a.model)

@@ -53,7 +53,8 @@ LM = dict(cpu=0, bseq=1, link0=2, link1=3, link2=4, link3=5,
           lmt=64, lmt2=128, qh=256, scores=1024, am=6144, ai=6208, gt=6272, iota=6336,
           expc=6400, c23=6420, m24=6421, b47=6422, pcnt=6423, yacc=6464)
 LM = {k: v + 64 for k, v in LM.items()}   # LM 0..63 holds the matvec Y accumulator (addressed by A0)
-LM.update(yacc=0, xq=8192, smask=8460, scon=8461, mvsw=8462, iscl=8463, tacc=8464)
+LM.update(qp=4096,       # packed-KV attention: interleaved q of a head pair (256 words)
+          yacc=0, xq=8192, smask=8460, scon=8461, mvsw=8462, iscl=8463, tacc=8464)
 NPL = 8                                    # activation bit planes (8-bit two's complement)
 QMAX = 127                                 # native Q8_K: iscale = -127/max
 
@@ -61,17 +62,26 @@ EXPDEG = 11
 SLOT0, SLOT1, DTAB = 9216, 9472, 10240      # LM: mask double buffer, decoded scale table
 
 
-def build(layout, act_bits=6):
+def build(layout, act_bits=6, kv_pack=False):
     """act_bits = 8: native Q8_K (iscale = -127/max); 6: same quantizer with
-    iscale = -31/max and codes in [-31, 31]."""
-    global NPL, QMAX
+    iscale = -31/max and codes in [-31, 31].
+
+    kv_pack: store the attention cache as truncated 32-bit CRAY floats (sign,
+    exponent and the top 16 coefficient bits), two per word: dims d and d+64
+    of a head share a word, high and low half.  Unpacking is one logical AND
+    (high half) or one left shift (low half), and halving the cache lets the
+    context grow from 200 to 400 positions."""
+    global NPL, QMAX, CTX, CTXS
     NPL, QMAX = {8: (8, 127), 6: (6, 31)}[act_bits]
+    CTX = 400 if kv_pack else 200
+    CTXS = CTX + 1
+    HDK = HD // 2 if kv_pack else HD        # cache words per head per position
     g = Gen(LM, MBOX)
     e = g.e
     T = layout['tensors']
     KVBASE = (layout['end'] + 1023) // 1024 * 1024
-    KT_L = NKV * HD * CTXS            # K^T words per layer
-    V_L = CTX * NKV * HD              # V words per layer
+    KT_L = NKV * HDK * CTXS           # K^T words per layer
+    V_L = CTX * NKV * HDK             # V words per layer
     KV_L = KT_L + V_L
     assert KVBASE + L * KV_L < 256 * MW, 'KV cache does not fit'
     tile_w = lambda cols: cols // 128 * 272
@@ -787,6 +797,13 @@ def build(layout, act_bits=6):
     e('A6 [%d]' % LM['link3'])
     e('J A6')
 
+    def unpack_v(ch):
+        # packed V row: dims 0..63 in the high halves, 64..127 in the low halves
+        if not kv_pack:
+            return 1
+        e('V0 S5&V1' if ch == 0 else 'V0 V1<A6')
+        return 0
+
     # ================================================================ attention
     g.lab('attention')
     e('[%d] A6' % LM['link1'])
@@ -827,7 +844,7 @@ def build(layout, act_bits=6):
     e('A5 S1')
     g.call('headnorm')
     e('A1 [%d]' % LM['kh'])
-    e('A3 %d' % (HD * CTXS))
+    e('A3 %d' % (HDK * CTXS))
     e('A1 A1*A3')
     e('S1 [%d]' % LM['ktb'])
     e('A3 S1')
@@ -836,10 +853,18 @@ def build(layout, act_bits=6):
     e('A3 S1')
     e('A1 A1+A3')                     # K^T(kh) + pos
     e('A3 %d' % CTXS)
-    e('(A1,A3) V1')
-    e('A4 %d' % (64 * CTXS))
-    e('A1 A1+A4')
-    e('(A1,A3) V2')
+    if kv_pack:                       # dims d (high half) and d+64 (low half) in one word
+        e('S5 [%d]' % LM['mhi'])
+        e('A4 32')
+        e('V3 S5&V1')
+        e('V4 V2>A4')
+        e('V5 V3!V4')
+        e('(A1,A3) V5')
+    else:
+        e('(A1,A3) V1')
+        e('A4 %d' % (64 * CTXS))
+        e('A1 A1+A4')
+        e('(A1,A3) V2')
     # --- V: store row pos
     e('A1 [%d]' % LM['kvoff'])
     e('A3 %d' % (QKV + HID + NKV * HD))
@@ -850,17 +875,27 @@ def build(layout, act_bits=6):
     e('V2 (A1,A2)')
     e('S1 [%d]' % LM['pos'])
     e('A3 S1')
-    e('A4 %d' % (NKV * HD))
+    e('A4 %d' % (NKV * HDK))
     e('A3 A3*A4')
-    e('A4 [%d]' % LM['kvoff'])
+    e('A4 [%d]' % LM['kh'])
+    e('A5 %d' % HDK)
+    e('A4 A4*A5')                     # kh * HDK
     e('A3 A3+A4')
     e('S1 [%d]' % LM['vtb'])
     e('A4 S1')
     e('A3 A3+A4')
-    e('(A3,A2) V1')
-    e('A4 64')
-    e('A3 A3+A4')
-    e('(A3,A2) V2')
+    if kv_pack:
+        e('S5 [%d]' % LM['mhi'])
+        e('A4 32')
+        e('V3 S5&V1')
+        e('V4 V2>A4')
+        e('V5 V3!V4')
+        e('(A3,A2) V5')
+    else:
+        e('(A3,A2) V1')
+        e('A4 64')
+        e('A3 A3+A4')
+        e('(A3,A2) V2')
     # --- 4 query heads: norm, rope, scale -> LM qh
     for hq in range(4):
         e('A1 [%d]' % LM['kh'])
@@ -887,6 +922,25 @@ def build(layout, act_bits=6):
     # --- scores: for head pairs (0,1),(2,3); chunks of 64 positions
     for pair in (0, 1):
         ha, hb = 2 * pair, 2 * pair + 1
+        if kv_pack:
+            # qp[2i] = q_a[i], qp[2i+1] = q_b[i] for i < 128: words 0..127 hold
+            # dims 0..63 (high halves), words 128..255 dims 64..127 (low halves)
+            e('A3 %d' % (LM['qh'] + ha * HD))
+            e('A4 %d' % (LM['qh'] + hb * HD))
+            e('A6 %d' % LM['qp'])
+            e('A7 %d' % HD)
+            lq = g.uniq('qp')
+            g.lab(lq)
+            e('S1 [A3]')
+            e('S2 [A4]')
+            e('A3 A3+A2')
+            e('A4 A4+A2')
+            e('[A6] S1')
+            e('A6 A6+A2')
+            e('[A6] S2')
+            e('A6 A6+A2')
+            e('A7 A7-A2')
+            e('JN A7,%s' % lq)
         e('A1 0')
         e('[%d] A1' % LM['grp'])           # chunk start
         lc = g.uniq('sc_chunk')
@@ -907,21 +961,55 @@ def build(layout, act_bits=6):
         g.lab(lv + '_x')
         # K^T(kh) + start
         e('A1 [%d]' % LM['kh'])
-        e('A4 %d' % (HD * CTXS))
+        e('A4 %d' % (HDK * CTXS))
         e('A1 A1*A4')
         e('S1 [%d]' % LM['ktb'])
         e('A4 S1')
         e('A1 A1+A4')
         e('A1 A1+A3')
-        e('A3 %d' % (LM['qh'] + ha * HD))
-        e('A4 %d' % (LM['qh'] + hb * HD))
-        e('A5 %d' % CTXS)
-        e('V4 V3\\V3')
-        e('V6 V3\\V3')
-        e('A7 64')
-        ld = g.uniq('sc_d')
-        g.lab(ld)
-        for half in (0, 1):
+        if kv_pack:
+            e('A3 %d' % LM['qp'])
+            e('A4 %d' % (LM['qp'] + HD))
+            e('A5 %d' % CTXS)
+            e('A6 32')
+            e('S5 [%d]' % LM['mhi'])
+            e('V4 V3\\V3')
+            e('V6 V3\\V3')
+            e('A7 64')
+            ld = g.uniq('sc_d')
+            g.lab(ld)
+            e('V1 (A1,A2)')                # packed row: dims d | d+64
+            e('A1 A1+A5')
+            e('S1 [A3]')                   # q_a[d]
+            e('A3 A3+A2')
+            e('S2 [A3]')                   # q_b[d]
+            e('A3 A3+A2')
+            e('S3 [A4]')                   # q_a[d+64]
+            e('A4 A4+A2')
+            e('S4 [A4]')                   # q_b[d+64]
+            e('A4 A4+A2')
+            e('V2 S5&V1')                  # K[d]
+            e('V3 V1<A6')                  # K[d+64]
+            e('V0 S1*FV2')
+            e('V1 S2*FV2')
+            e('V5 V4+FV0')
+            e('V7 V6+FV1')
+            e('V0 S3*FV3')
+            e('V1 S4*FV3')
+            e('V4 V5+FV0')
+            e('V6 V7+FV1')
+            e('A7 A7-A2')
+            e('JN A7,%s' % ld)
+        else:
+          e('A3 %d' % (LM['qh'] + ha * HD))
+          e('A4 %d' % (LM['qh'] + hb * HD))
+          e('A5 %d' % CTXS)
+          e('V4 V3\\V3')
+          e('V6 V3\\V3')
+          e('A7 64')
+          ld = g.uniq('sc_d')
+          g.lab(ld)
+          for half in (0, 1):
             acc_a, nacc_a = (4, 5) if half == 0 else (5, 4)
             acc_b, nacc_b = (6, 7) if half == 0 else (7, 6)
             e('V1 (A1,A2)')
@@ -934,8 +1022,8 @@ def build(layout, act_bits=6):
             e('V3 S2*FV1')
             e('V%d V%d+FV2' % (nacc_a, acc_a))
             e('V%d V%d+FV3' % (nacc_b, acc_b))
-        e('A7 A7-A2')
-        e('JN A7,%s' % ld)
+          e('A7 A7-A2')
+          e('JN A7,%s' % ld)
         # store score chunks to LM scores + head*1024 + start
         e('A3 [%d]' % LM['grp'])
         e('A4 %d' % (LM['scores'] + ha * CTX))
@@ -1035,16 +1123,21 @@ def build(layout, act_bits=6):
         for ch in (0, 1):
             e('A3 64')
             e('VL A3')
-            e('A1 [%d]' % LM['kvoff'])
+            e('A1 [%d]' % LM['kh'])
+            e('A4 %d' % HDK)
+            e('A1 A1*A4')                 # kh * HDK
             e('S1 [%d]' % LM['vtb'])
             e('A4 S1')
             e('A1 A1+A4')
-            if ch:
+            if ch and not kv_pack:
                 e('A4 64')
                 e('A1 A1+A4')
+            if kv_pack:
+                e('S5 [%d]' % LM['mhi'])
+                e('A6 32')
             e('A3 %d' % (LM['scores'] + ha * CTX))
             e('A4 %d' % (LM['scores'] + hb * CTX))
-            e('A5 %d' % (NKV * HD))
+            e('A5 %d' % (NKV * HDK))
             e('A7 [%d]' % LM['n'])
             e('V4 V3\\V3')
             e('V6 V3\\V3')
@@ -1062,8 +1155,9 @@ def build(layout, act_bits=6):
             e('A3 A3+A2')
             e('S2 [A4]')
             e('A4 A4+A2')
-            e('V2 S1*FV1')
-            e('V3 S2*FV1')
+            vr = unpack_v(ch)
+            e('V2 S1*FV%d' % vr)
+            e('V3 S2*FV%d' % vr)
             e('V5 V4+FV2')
             e('V7 V6+FV3')
             e('A7 A7-A2')
@@ -1074,8 +1168,9 @@ def build(layout, act_bits=6):
             e('A3 A3+A2')
             e('S2 [A4]')
             e('A4 A4+A2')
-            e('V2 S1*FV1')
-            e('V3 S2*FV1')
+            vr = unpack_v(ch)
+            e('V2 S1*FV%d' % vr)
+            e('V3 S2*FV%d' % vr)
             e('V4 V5+FV2')
             e('V6 V7+FV3')
             e('J %s' % lt)
@@ -1365,10 +1460,10 @@ def mv_group_body(window=8, reserve=0, seed=None, jitter=0):
 
 
 
-def generate(layout_path, out_dir, act_bits=6):
+def generate(layout_path, out_dir, act_bits=6, kv_pack=False):
     """Write program.cal, rope.img, desc.img and meta.json into out_dir."""
     lay = json.loads(pathlib.Path(layout_path).read_text())
-    src, data, meta = build(lay, act_bits)
+    src, data, meta = build(lay, act_bits, kv_pack)
     out = pathlib.Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     (out / 'program.cal').write_text(src)
@@ -1381,6 +1476,7 @@ def generate(layout_path, out_dir, act_bits=6):
     meta['rope_corr'] = corr
     meta['model'] = 'ternary'
     meta['act_bits'] = act_bits
+    meta['kv_pack'] = kv_pack
     meta['embedding_disk'] = lay['embedding_disk']
     (out / 'meta.json').write_text(json.dumps(meta, indent=1))
     return out

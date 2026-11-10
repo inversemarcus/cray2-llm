@@ -26,7 +26,8 @@ import hashlib  # noqa: E402
 import json  # noqa: E402
 import shutil  # noqa: E402
 
-MODELS = {'binary': ('binary', None), 'ternary6': ('ternary', 6), 'ternary8': ('ternary', 8)}
+MODELS = {'binary': ('binary', None), 'ternary6': ('ternary', 6), 'ternary8': ('ternary', 8),
+          'ternary6-long': ('ternary', 6)}   # packed attention cache, 400 positions
 
 
 def main():
@@ -65,7 +66,7 @@ def main():
     if kind == 'binary':
         gen_binary.generate(img / 'layout.json', out)
     else:
-        gen_ternary.generate(img / 'layout.json', out, bits)
+        gen_ternary.generate(img / 'layout.json', out, bits, kv_pack=a.model.endswith('-long'))
     n = cal2.assemble_file(str(out / 'program.cal'), str(out / 'program.bin'))
     print('done: %d words of CRAY-2 code' % n)
 

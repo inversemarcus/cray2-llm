@@ -32,7 +32,7 @@ def compare(x, ref):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('--model', default='ternary6', choices=['ternary6', 'ternary8', 'binary'])
+    ap.add_argument('--model', default='ternary6', choices=['ternary6', 'ternary6-long', 'ternary8', 'binary'])
     ap.add_argument('--tokens', default='198', help='comma-separated token IDs fed at successive positions')
     ap.add_argument('--pos', type=int, default=0, help='first position (timing probes)')
     ap.add_argument('--ref', default='', help='native capture directory for per-layer comparison')
